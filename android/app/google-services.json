@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "418364324089",
+    "project_id": "pythagon-c5c27",
+    "storage_bucket": "pythagon-c5c27.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418364324089:android:a6774637a9e4711de00a28",
+        "android_client_info": {
+          "package_name": "com.pythagon.tutors"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "418364324089-uqb4vlpaiha4bsrermcragt2rn0pgjid.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcJKcro_WXadHu_xm3z2tM06X2YcTPmNo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "418364324089-uqb4vlpaiha4bsrermcragt2rn0pgjid.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

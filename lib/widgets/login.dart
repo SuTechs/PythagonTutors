@@ -1,7 +1,9 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '/constants.dart';
+import '/data/database.dart';
 
 /// welcome login
 
@@ -167,7 +169,7 @@ class _AnimatedQuoteState extends State<AnimatedQuote> {
 
         /// quote
         SizedBox(
-          height: 16,
+          height: 20,
           child: DefaultTextStyle(
             style: const TextStyle(
               fontSize: 16,
@@ -202,13 +204,35 @@ class LoginInputScreen extends StatelessWidget {
   final String title;
   final VoidCallback onNext;
 
-  const LoginInputScreen({
+  // input field
+  final GestureTapCallback? onTap;
+  final TextEditingController controller;
+  final FormFieldValidator<String>? validator;
+  final String label;
+  final bool isReadOnly;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
+  final String? prefixText;
+
+  final _formKey = GlobalKey<FormState>();
+
+  LoginInputScreen({
     Key? key,
     required this.backgroundColor,
     required this.image,
     required this.onNext,
     required this.currentStep,
     required this.title,
+
+    // input
+    this.onTap,
+    required this.controller,
+    this.validator,
+    required this.label,
+    this.isReadOnly = false,
+    this.inputFormatters,
+    this.keyboardType,
+    this.prefixText,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -257,12 +281,27 @@ class LoginInputScreen extends StatelessWidget {
                 ],
               ),
               child: Center(
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    contentPadding: EdgeInsets.all(0),
-                    border: InputBorder.none,
-                    isDense: true,
-                    hintText: 'Name',
+                child: Form(
+                  key: _formKey,
+                  child: TextFormField(
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.all(0),
+                      border: InputBorder.none,
+                      isDense: true,
+                      hintText: label,
+                      prefixText: prefixText,
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    onTap: onTap,
+                    controller: controller,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return '$label is required';
+
+                      if (validator != null) validator!(v);
+                    },
+                    inputFormatters: inputFormatters,
+                    readOnly: isReadOnly,
+                    keyboardType: keyboardType,
                   ),
                 ),
               ),
@@ -272,9 +311,9 @@ class LoginInputScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 6; i++)
                   Container(
-                    margin: i != 4 ? EdgeInsets.only(right: 8) : null,
+                    margin: i != 5 ? EdgeInsets.only(right: 8) : null,
                     width: 24.0,
                     height: 4.0,
                     decoration: BoxDecoration(
@@ -300,7 +339,11 @@ class LoginInputScreen extends StatelessWidget {
                     backgroundColor: MaterialStateProperty.all(Colors.white),
                     shape: MaterialStateProperty.all(StadiumBorder()),
                   ),
-                  onPressed: onNext,
+                  onPressed: () {
+                    // ToDO : enable validation
+                    //if (_formKey.currentState!.validate())
+                    onNext();
+                  },
                   child: Text(
                     'Next',
                     style: TextStyle(fontSize: 16, color: backgroundColor),
@@ -311,6 +354,142 @@ class LoginInputScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// select subjects
+class SelectMultipleSubjects extends StatefulWidget {
+  final List<Subject> subjects;
+  final List<String> initiallySelectedSubjectsIds;
+
+  final void Function(List<Subject> subjectsList) onSelect;
+
+  const SelectMultipleSubjects(
+      {Key? key,
+      required this.subjects,
+      required this.onSelect,
+      required this.initiallySelectedSubjectsIds})
+      : super(key: key);
+  @override
+  _SelectMultipleSubjectsState createState() => _SelectMultipleSubjectsState();
+}
+
+class _SelectMultipleSubjectsState extends State<SelectMultipleSubjects> {
+  final List<Subject> subjectsList = [];
+  final List<String> selectedSubjectsIds = [];
+  String searchText = '';
+
+  @override
+  void initState() {
+    subjectsList.addAll(widget.subjects);
+    selectedSubjectsIds.addAll(widget.initiallySelectedSubjectsIds);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  height: 49,
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24.0),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0x29000000),
+                        offset: Offset(0, 3),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: TextField(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.all(0),
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Search...',
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchText = value;
+                          subjectsList.clear();
+                          subjectsList.addAll(widget.subjects);
+                          subjectsList.retainWhere((element) => element.name
+                              .toLowerCase()
+                              .contains(value.trim().toLowerCase()));
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              if (selectedSubjectsIds.isNotEmpty) SizedBox(width: 12),
+              if (selectedSubjectsIds.isNotEmpty)
+                FloatingActionButton(
+                  mini: true,
+                  child: Icon(Icons.done),
+                  onPressed: () {
+                    widget.onSelect(widget.subjects
+                        .where((element) =>
+                            selectedSubjectsIds.contains(element.id))
+                        .toList());
+                    Navigator.pop(context);
+                  },
+                ),
+              SizedBox(width: 12),
+            ],
+          ),
+        ),
+
+        /// items
+        Expanded(
+          child: Scrollbar(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  selected:
+                      selectedSubjectsIds.contains(subjectsList[index].id),
+                  onTap: () {
+                    setState(() {
+                      if (selectedSubjectsIds.contains(subjectsList[index].id))
+                        selectedSubjectsIds.remove(subjectsList[index].id);
+                      else
+                        selectedSubjectsIds.add(subjectsList[index].id);
+                    });
+                  },
+                  title: Text('${subjectsList[index].name}'),
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(subjectsList[index].image),
+                  ),
+                );
+              },
+              separatorBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 70),
+                  child: Container(
+                    height: 0.1,
+                    color: const Color(0xffededed),
+                  ),
+                );
+              },
+              itemCount: subjectsList.length,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
