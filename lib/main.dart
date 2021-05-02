@@ -11,9 +11,6 @@ void main() async {
 
   await Firebase.initializeApp();
 
-  FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: 'sumit123210@gmail.com', password: 'Pythagon@12345#');
-
   runApp(MyApp());
 }
 
@@ -27,7 +24,21 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.pink,
         accentColor: kLogoRedColor,
       ),
-      home: Welcome(),
+      home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.active) {
+              if (snapshot.hasData) {
+                return HomeLogic(
+                  user: snapshot.data!,
+                );
+              }
+
+              return Welcome();
+            }
+
+            return Scaffold(body: Center(child: CircularProgressIndicator()));
+          }),
     );
   }
 }

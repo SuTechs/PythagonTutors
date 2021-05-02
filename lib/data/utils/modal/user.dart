@@ -1,29 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
-import 'dataBox.dart';
+import '../../database.dart';
 
-class UserData extends ChangeNotifier {
-  static final UserData _singleton = UserData._internal();
-  static User? get authData => FirebaseAuth.instance.currentUser;
+class UserData {
+  // singleton
+  // static final UserData _singleton = UserData._internal();
+  // factory UserData() {
+  //   return _singleton;
+  // }
+  // UserData._internal();
 
-  factory UserData() {
-    return _singleton;
-  }
+  static User get authData => FirebaseAuth.instance.currentUser!;
 
-  UserData._internal();
+  static late Teacher teacher;
 
-  late bool _isDarkMode;
-
-  void init() {
-    _isDarkMode = Data.boolBox.get('isVerified', defaultValue: true) ?? true;
-  }
-
-  bool get isDarkMode => _isDarkMode;
-
-  set isDarkMode(bool value) {
-    _isDarkMode = value;
-    Data.boolBox.put('isVerified', value);
-    notifyListeners();
+  static void fetchTeacher() {
+    Teacher.fetchIfExist(authData);
   }
 }

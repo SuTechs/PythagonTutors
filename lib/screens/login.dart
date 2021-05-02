@@ -1,18 +1,43 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:tutors/data/bloc/login.dart';
+import 'package:tutors/data/utils/modal/user.dart';
 
 import '/data/database.dart';
 import '/widgets/login.dart';
 import '/widgets/selectFromList.dart';
 import '/widgets/showRoundedBottomSheet.dart';
+import 'home.dart';
 
 class Welcome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WelcomeLogin(
-      onPressed: () {
-        Get.to(() => LoginName(), transition: Transition.downToUp);
+      onPressed: () async {
+        LoginBloc.signInWithGoogle();
+      },
+    );
+  }
+}
+
+class HomeLogic extends StatelessWidget {
+  final User user;
+
+  const HomeLogic({Key? key, required this.user}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: Teacher.fetchIfExist(user),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) return Home();
+
+          return LoginName();
+        }
+
+        return Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
@@ -25,12 +50,16 @@ class LoginName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _controller.text = UserData.teacher.name;
+
     return LoginInputScreen(
       title: 'What is your name?',
       currentStep: 1,
       backgroundColor: const Color(0xffF4B532),
       image: 'assets/images/name.png',
       onNext: () {
+        UserData.teacher.name = _controller.text.trim();
+
         Get.to(() => Phone(), transition: Transition.cupertino);
       },
 
@@ -48,6 +77,7 @@ class Phone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _controller.text = UserData.teacher.phone;
     return LoginInputScreen(
       title: 'What is your phone number?',
       currentStep: 2,
@@ -55,6 +85,8 @@ class Phone extends StatelessWidget {
       image: 'assets/images/phone.png',
 
       onNext: () {
+        UserData.teacher.phone = _controller.text.trim();
+
         Get.to(() => SubjectScreen(), transition: Transition.cupertino);
       },
 
@@ -77,6 +109,8 @@ class SubjectScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _subjectsList.text = UserData.teacher.subjectsIds.join(', ');
+
     return LoginInputScreen(
       title: 'What are the subjects you are good in?',
       currentStep: 3,
@@ -88,7 +122,7 @@ class SubjectScreen extends StatelessWidget {
 
       // input
       controller: _subjectsList,
-      label: 'Subjects',
+      label: 'Select Subjects',
       isReadOnly: true,
       onTap: () {
         showRoundedBottomSheet(
@@ -103,8 +137,10 @@ class SubjectScreen extends StatelessWidget {
                 if (snapshot.hasData)
                   return SelectMultipleSubjects(
                     subjects: snapshot.data!,
-                    initiallySelectedSubjectsIds: ['Accounting'],
+                    initiallySelectedSubjectsIds: UserData.teacher.subjectsIds,
                     onSelect: (value) {
+                      UserData.teacher.subjectsIds =
+                          value.map((e) => e.id).toList();
                       _subjectsList.text =
                           value.map((e) => e.name).toList().join(", ");
                     },
@@ -124,6 +160,8 @@ class CollegeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _college.text = UserData.teacher.college.collegeName;
+
     return LoginInputScreen(
       title: 'What is your college name?',
       currentStep: 4,
@@ -135,7 +173,7 @@ class CollegeScreen extends StatelessWidget {
 
       // input
       controller: _college,
-      label: 'College',
+      label: 'College Name',
       isReadOnly: true,
       onTap: () {
         showRoundedBottomSheet(
@@ -158,6 +196,7 @@ class CollegeScreen extends StatelessWidget {
                       _college.text = newItem;
                     },
                     onSelect: (value) {
+                      UserData.teacher.college = value;
                       _college.text = value.collegeName;
                     },
                   );
@@ -176,6 +215,8 @@ class CourseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _course.text = UserData.teacher.course.courseName;
+
     return LoginInputScreen(
       title: 'Which course you are in?',
       currentStep: 5,
@@ -210,6 +251,7 @@ class CourseScreen extends StatelessWidget {
                       _course.text = newItem;
                     },
                     onSelect: (value) {
+                      UserData.teacher.course = value;
                       _course.text = value.courseName;
                     },
                   );
@@ -228,13 +270,17 @@ class Born extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _dob.text = UserData.teacher.dateOfBirth;
+
     return LoginInputScreen(
       title: 'When were you born?',
       currentStep: 6,
       backgroundColor: const Color(0xff774BEE),
       image: 'assets/images/born.png',
       onNext: () {
-        Get.offAll(() => Welcome(), transition: Transition.upToDown);
+        UserData.teacher.addOrUpdateTeacher(true);
+
+        Get.offAll(() => Home(), transition: Transition.upToDown);
       },
 
       // input
@@ -250,8 +296,10 @@ class Born extends StatelessWidget {
           lastDate: DateTime.now(),
           firstDate: DateTime(1980),
         );
-        if (pickedDate != null)
+        if (pickedDate != null) {
           _dob.text = pickedDate.toString().substring(0, 10);
+          UserData.teacher.dateOfBirth = _dob.text;
+        }
       },
     );
   }

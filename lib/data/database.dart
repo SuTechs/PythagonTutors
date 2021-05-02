@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:tutors/data/utils/modal/user.dart';
 
 import '/data/utils/modal/collectionRef.dart';
 
@@ -180,18 +182,18 @@ class TeacherRating {
 }
 
 class Teacher {
-  static final List<Teacher> _teachers = [];
   final String id;
-  final String name;
-  final String phone;
+  String name;
+  String phone;
   final String profilePic;
   final String email;
   final TeacherRating rating;
   final int totalRating;
-  final String dateOfBirth;
+  String dateOfBirth;
   final String gender;
-  final College college;
-  final List<String> subjectsIds;
+  College college;
+  Course course;
+  List<String> subjectsIds;
   final double balance;
 
   Teacher(
@@ -205,6 +207,7 @@ class Teacher {
       required this.dateOfBirth,
       required this.gender,
       required this.college,
+      required this.course,
       required this.balance,
       required this.totalRating});
 
@@ -237,6 +240,7 @@ class Teacher {
         'dateOfBirth': dateOfBirth,
         'gender': gender,
         'college': college.collegeName,
+        'course': course.courseName,
         'rating': rating.toJson(),
         'totalRating': totalRating,
         'balance': balance,
@@ -260,34 +264,50 @@ class Teacher {
       gender: json['gender'],
       college:
           College(collegeId: json['college'], collegeName: json['college']),
+      course: Course(courseId: json['course'], courseName: json['course']),
     );
-  }
-
-  static Future<List<Teacher>> getTeachers() async {
-    if (_teachers.isNotEmpty) return _teachers;
-
-    final data = await CollectionRef.teachers.get();
-
-    for (QueryDocumentSnapshot snapshot in data.docs)
-      _teachers.add(Teacher.fromJson(snapshot.data()));
-
-    return _teachers;
-  }
-
-  static void resetTeachers() {
-    _teachers.clear();
   }
 
   Future<void> addOrUpdateTeacher(bool isEdit) async {
     print('${isEdit ? 'Update' : 'Create'} teacher');
 
-    if (isEdit) {
+    if (isEdit)
       await CollectionRef.teachers.doc(id).update(toJson(isEdit));
-      _teachers.removeWhere((element) => element.id == id);
-    } else
+    else
       await CollectionRef.teachers.doc(id).set(toJson(isEdit));
+  }
 
-    _teachers.add(this);
+  static Future<bool> fetchIfExist(User user) async {
+    final data = await CollectionRef.teachers.doc(user.uid).get();
+
+    if (data.exists && data.data() != null) {
+      UserData.teacher = Teacher.fromJson(data.data()!);
+      return true;
+    }
+
+    await _createNewTeacherDoc(user);
+
+    return false;
+  }
+
+  static Future<void> _createNewTeacherDoc(User user) async {
+    final newTeacher = Teacher(
+      id: user.uid,
+      name: user.displayName ?? '',
+      phone: user.phoneNumber ?? '',
+      profilePic: user.photoURL ?? '',
+      email: user.email ?? '',
+      rating: TeacherRating(performance: 0, accuracy: 0, availability: 0),
+      subjectsIds: [],
+      dateOfBirth: '',
+      gender: '',
+      college: College(collegeName: '', collegeId: ''),
+      course: Course(courseName: '', courseId: ''),
+      balance: 0,
+      totalRating: 0,
+    );
+    await newTeacher.addOrUpdateTeacher(false);
+    UserData.teacher = newTeacher;
   }
 }
 
@@ -346,24 +366,6 @@ class TeachersAssignments {
     );
   }
 
-  static Future<void> floatAssignments(
-      List<String> selectedTeachers, String assignmentId, double amount) async {
-    /// creating teachers assignments
-    for (String teacherId in selectedTeachers) {
-      final id = '${DateTime.now().millisecondsSinceEpoch}';
-
-      await CollectionRef.teachersAssignments.doc(id).set({
-        'id': id,
-        'assignmentId': assignmentId,
-        'teacher': teacherId,
-        'amount': amount,
-        'createdAt': Timestamp.now(),
-        'updatedAt': Timestamp.now(),
-        'status': kTeacherAssignmentStatusEnumMap[TeacherAssignmentStatus.Sent],
-      });
-    }
-  }
-
   static Future<void> changeStatus(
       TeacherAssignmentStatus status, String id) async {
     await CollectionRef.teachersAssignments
@@ -375,31 +377,5 @@ class TeachersAssignments {
     await CollectionRef.teachersAssignments
         .doc(id)
         .update({'assignmentFiles': files});
-  }
-
-  static Future<void> rate(TeacherRating rating, String teacherId, String id,
-      TeacherRating currentRating, int totalCurrentRating) async {
-    /// adding rating in teacher assignment
-    await CollectionRef.teachersAssignments.doc(id).update({
-      'rating': rating.toJson(),
-      'status': kTeacherAssignmentStatusEnumMap[TeacherAssignmentStatus.Rated]
-    });
-
-    /// adding rating in teacher
-    totalCurrentRating += 1;
-    final teacherRating = TeacherRating(
-        performance: (rating.performance + currentRating.performance) /
-            totalCurrentRating,
-        accuracy: (rating.performance + currentRating.performance) /
-            totalCurrentRating,
-        availability: (rating.performance + currentRating.performance) /
-            totalCurrentRating);
-
-    await CollectionRef.teachers.doc(teacherId).update({
-      'rating': teacherRating.toJson(),
-      'totalRating': totalCurrentRating,
-    }).then((value) {
-      Teacher.resetTeachers();
-    });
   }
 }

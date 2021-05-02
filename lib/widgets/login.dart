@@ -340,9 +340,7 @@ class LoginInputScreen extends StatelessWidget {
                     shape: MaterialStateProperty.all(StadiumBorder()),
                   ),
                   onPressed: () {
-                    // ToDO : enable validation
-                    //if (_formKey.currentState!.validate())
-                    onNext();
+                    if (_formKey.currentState!.validate()) onNext();
                   },
                   child: Text(
                     'Next',
