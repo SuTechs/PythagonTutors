@@ -9,7 +9,7 @@ import '/data/database.dart';
 import '/widgets/login.dart';
 import '/widgets/selectFromList.dart';
 import '/widgets/showRoundedBottomSheet.dart';
-import 'home.dart';
+import 'navigationHome.dart';
 
 class Welcome extends StatelessWidget {
   @override
@@ -32,7 +32,7 @@ class HomeLogic extends StatelessWidget {
       future: Teacher.fetchIfExist(user),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          if (snapshot.data!) return Home();
+          if (snapshot.data!) return NavigationHome();
 
           return LoginName();
         }
@@ -280,7 +280,7 @@ class Born extends StatelessWidget {
       onNext: () {
         UserData.teacher.addOrUpdateTeacher(true);
 
-        Get.offAll(() => Home(), transition: Transition.upToDown);
+        Get.offAll(() => NavigationHome(), transition: Transition.upToDown);
       },
 
       // input

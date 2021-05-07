@@ -277,16 +277,21 @@ class Teacher {
       await CollectionRef.teachers.doc(id).set(toJson(isEdit));
   }
 
+  static bool _hasTeacherData = false;
   static Future<bool> fetchIfExist(User user) async {
+    if (_hasTeacherData) return true;
+
     final data = await CollectionRef.teachers.doc(user.uid).get();
 
     if (data.exists && data.data() != null) {
       UserData.teacher = Teacher.fromJson(data.data()!);
+      _hasTeacherData = false;
       return true;
     }
 
     await _createNewTeacherDoc(user);
 
+    _hasTeacherData = false;
     return false;
   }
 
