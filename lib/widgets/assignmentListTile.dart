@@ -53,7 +53,10 @@ class AssignmentListTile extends StatelessWidget {
               ? null
               : RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4.0),
-                  side: BorderSide(width: 0.1, color: const Color(0xff060324)),
+                  side: BorderSide(
+                    width: 0.1,
+                    color: kBlueColor,
+                  ),
                 ),
           leading: CircleAvatar(
             child: Padding(

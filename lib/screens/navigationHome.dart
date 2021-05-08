@@ -2,6 +2,7 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutors/data/utils/Utils.dart';
+import 'package:tutors/screens/profile.dart';
 
 import '../constants.dart';
 import 'home.dart';
@@ -75,9 +76,7 @@ class _NavigationHomeState extends State<NavigationHome> {
     /// profile
     NavScreen(
       title: 'Profile',
-      screens: Center(
-        child: Text('Profile will open'),
-      ),
+      screens: Profile(),
       icon: Icon(
         Icons.person,
         size: 30,

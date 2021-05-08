@@ -285,13 +285,13 @@ class Teacher {
 
     if (data.exists && data.data() != null) {
       UserData.teacher = Teacher.fromJson(data.data()!);
-      _hasTeacherData = false;
+      _hasTeacherData = true;
       return true;
     }
 
     await _createNewTeacherDoc(user);
 
-    _hasTeacherData = false;
+    _hasTeacherData = true;
     return false;
   }
 
