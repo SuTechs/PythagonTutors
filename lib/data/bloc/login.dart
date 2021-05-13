@@ -20,6 +20,7 @@ class LoginBloc {
       // Once signed in, return the UserCredential
       final userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
+
       return userCredential.user;
     }
 

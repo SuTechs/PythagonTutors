@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tutors/constants.dart';
-import 'package:tutors/screens/transcation.dart';
+import 'package:tutors/data/database.dart';
+import 'package:tutors/data/utils/Utils.dart';
+import 'package:tutors/data/utils/modal/user.dart';
+import 'package:tutors/screens/transaction.dart';
 
 class Profile extends StatelessWidget {
   @override
@@ -18,7 +21,7 @@ class Profile extends StatelessWidget {
                 radius: 32,
                 // backgroundColor: const Color(0xffF1F1F1),
                 backgroundColor: Color(0xffF4B532),
-                backgroundImage: AssetImage('assets/images/name.png'),
+                backgroundImage: NetworkImage(UserData.teacher.profilePic),
                 // child: Image.asset('assets/images/name.png'),
               ),
 
@@ -26,22 +29,34 @@ class Profile extends StatelessWidget {
 
               /// name and phone
               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   /// name
-                  Text(
-                    'Uchit Chakma',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: kBlueColor,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        UserData.teacher.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: kBlueColor,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      if (UserData.teacher.isVerified)
+                        Icon(
+                          Icons.verified,
+                          size: 15,
+                          color: kLogoRedColor,
+                        ),
+                    ],
                   ),
 
                   SizedBox(height: 4),
 
                   /// phone
                   Text(
-                    '+91 7667323338',
+                    UserData.teacher.phone,
                     style: Theme.of(context)
                         .textTheme
                         .caption!
@@ -66,7 +81,7 @@ class Profile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '₹ 500',
+                      '₹ ${UserData.teacher.balance}',
                       style: TextStyle(
                         fontSize: 16,
                         color: kBlueColor,
@@ -86,47 +101,55 @@ class Profile extends StatelessWidget {
           /// subjects
           ProfileListContainer(
             title: 'Subjects',
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 32,
-                  child: ProfileListContainerTile(
-                    icon: Icons.computer_sharp,
-                    title: 'Computer Science',
-                  ),
-                ),
-                SizedBox(
-                  height: 32,
-                  child: ProfileListContainerTile(
-                    icon: Icons.science,
-                    title: 'Chemistry',
-                  ),
-                ),
-                SizedBox(
-                  height: 32,
-                  child: ProfileListContainerTile(
-                    icon: Icons.attach_money,
-                    title: 'Economics',
-                  ),
-                ),
-                SizedBox(
-                  height: 44,
-                  child: ProfileListContainerTile(
-                    icon: Icons.poll,
-                    title: 'Writing',
-                  ),
-                ),
-              ],
-            ),
+            child: FutureBuilder<List<Subject>>(
+                future: Subject.getSubjects(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error = ${snapshot.error}'));
+                  }
+
+                  if (snapshot.hasData)
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: 6),
+                        for (String s in UserData.teacher.subjectsIds)
+                          SizedBox(
+                            height: 32,
+                            child: ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.red,
+                                backgroundImage: NetworkImage(
+                                  snapshot.data!
+                                      .firstWhere((element) => element.id == s)
+                                      .image,
+                                ),
+                              ),
+                              title: Text(
+                                snapshot.data!
+                                    .firstWhere((element) => element.id == s)
+                                    .name,
+                                style: TextStyle(color: kBlueColor),
+                              ),
+                              horizontalTitleGap: 0,
+                            ),
+                          ),
+                        SizedBox(height: 12),
+                      ],
+                    );
+
+                  return Center(child: CircularProgressIndicator());
+                }),
           ),
 
           /// course
           ProfileListContainer(
-            title: 'Course',
+            title: 'Stream',
             child: ProfileListContainerTile(
               icon: Icons.school,
-              title: 'B.Tech CSE',
+              title: UserData.teacher.course.courseName,
             ),
           ),
 
@@ -135,7 +158,7 @@ class Profile extends StatelessWidget {
             title: 'College',
             child: ProfileListContainerTile(
               icon: Icons.account_balance,
-              title: 'HKBK College Of Eng',
+              title: UserData.teacher.college.collegeName,
             ),
           ),
 
@@ -144,25 +167,41 @@ class Profile extends StatelessWidget {
             title: 'DOB',
             child: ProfileListContainerTile(
               icon: Icons.calendar_today,
-              title: '23/07/2001',
+              title: UserData.teacher.dateOfBirth,
             ),
           ),
 
-          /// gender
-          ProfileListContainer(
-            title: 'Gender',
-            child: ProfileListContainerTile(
-              icon: Icons.person,
-              title: 'Male',
-            ),
-          ),
+          // /// gender
+          // ProfileListContainer(
+          //   title: 'Gender',
+          //   child: ProfileListContainerTile(
+          //     icon: Icons.person,
+          //     title: UserData.teacher.gender,
+          //   ),
+          // ),
 
           /// email
           ProfileListContainer(
             title: 'Email',
             child: ProfileListContainerTile(
               icon: Icons.email,
-              title: 'sumit123210@gmail.com',
+              title: UserData.teacher.email,
+            ),
+          ),
+
+          /// Request Change / verification
+          ProfileListContainer(
+            title: UserData.teacher.isVerified ? 'Update' : 'Verify',
+            child: ProfileListContainerTile(
+              icon: UserData.teacher.isVerified ? Icons.edit : Icons.verified,
+              title: UserData.teacher.isVerified
+                  ? 'Request Change'
+                  : 'Request Verification',
+              onTap: () {
+                launchWhatsapp(
+                    message:
+                        '${UserData.teacher.id}\nHi! there, I would like to ${UserData.teacher.isVerified ? 'request change in ' : 'verify my account.'}');
+              },
             ),
           ),
 
@@ -223,18 +262,18 @@ class ProfileListContainer extends StatelessWidget {
 }
 
 class ProfileListContainerTile extends StatelessWidget {
+  final GestureTapCallback? onTap;
   final String title;
   final IconData icon;
 
-  const ProfileListContainerTile({
-    Key? key,
-    required this.title,
-    required this.icon,
-  }) : super(key: key);
+  const ProfileListContainerTile(
+      {Key? key, required this.title, required this.icon, this.onTap})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onTap,
       dense: true,
       leading: Icon(
         icon,
