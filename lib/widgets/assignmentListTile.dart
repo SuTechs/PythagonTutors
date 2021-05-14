@@ -2,27 +2,32 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/utils.dart';
+import 'package:tutors/data/database.dart';
+import 'package:tutors/data/utils/Utils.dart';
 
 import '../constants.dart';
 
 class AssignmentsListView extends StatelessWidget {
-  final int length;
+  final List<TeachersAssignments> assignments;
 
-  const AssignmentsListView({Key? key, required this.length}) : super(key: key);
+  const AssignmentsListView({Key? key, required this.assignments})
+      : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ListView.builder(
-        itemCount: length + 1,
+        itemCount: assignments.length + 1,
         itemBuilder: (_, index) {
-          if (index == length) return SizedBox(height: 16);
+          if (index == assignments.length) return SizedBox(height: 16);
           return Hero(
               tag: 'Hero Tag $index',
               child: AssignmentListTile(
+                assignment: assignments[index],
                 onTap: () {
                   Get.to(
                     () => AssignmentDetail(
                       heroTag: 'Hero Tag $index',
+                      assignment: assignments[index],
                     ),
                     transition: Transition.cupertinoDialog,
                   );
@@ -35,10 +40,15 @@ class AssignmentsListView extends StatelessWidget {
 }
 
 class AssignmentListTile extends StatelessWidget {
+  final TeachersAssignments assignment;
   final GestureTapCallback? onTap;
   final bool isDetailPage;
 
-  const AssignmentListTile({Key? key, this.onTap, this.isDetailPage = false})
+  const AssignmentListTile(
+      {Key? key,
+      this.onTap,
+      this.isDetailPage = false,
+      required this.assignment})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -59,10 +69,12 @@ class AssignmentListTile extends StatelessWidget {
                   ),
                 ),
           leading: CircleAvatar(
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Image.asset('assets/icons/logo.png'),
-            ),
+            // child: Padding(
+            //   padding: const EdgeInsets.all(4.0),
+            //   child: Image.network(),
+            // ),
+            backgroundImage:
+                NetworkImage(assignment.assignmentData.subject.image),
             backgroundColor: const Color(0xffF1F1F1),
           ),
           title: Column(
@@ -70,23 +82,26 @@ class AssignmentListTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chemistry',
+                assignment.assignmentData.subject.name,
                 style: context.textTheme.caption,
               ),
               SizedBox(height: 2),
-              Text('Periodic Table'),
+              Text(assignment.assignmentData.name),
               SizedBox(height: 4),
             ],
           ),
-          subtitle: Text('23 Apr 12:20 PM'),
+          subtitle: Text(getFormattedTime(assignment.assignmentData.time)),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('₹ 500'),
+              Text('₹ ${assignment.amount}'),
               SizedBox(height: 2),
               Text(
-                'Assgn',
+                assignment.assignmentData.assignmentType ==
+                        AssignmentType.Session
+                    ? 'Sessn'
+                    : 'Assgn',
                 style: context.textTheme.caption,
               ),
             ],
@@ -101,8 +116,11 @@ class AssignmentListTile extends StatelessWidget {
 
 class AssignmentDetail extends StatelessWidget {
   final String heroTag;
+  final TeachersAssignments assignment;
 
-  const AssignmentDetail({Key? key, required this.heroTag}) : super(key: key);
+  const AssignmentDetail(
+      {Key? key, required this.heroTag, required this.assignment})
+      : super(key: key);
 
   Widget getTitle(String title, BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
@@ -152,6 +170,7 @@ class AssignmentDetail extends StatelessWidget {
               tag: heroTag,
               child: AssignmentListTile(
                 isDetailPage: true,
+                assignment: assignment,
               ),
             ),
             SizedBox(height: 32),
@@ -160,7 +179,7 @@ class AssignmentDetail extends StatelessWidget {
 
             getTitle('Description', context),
             Text(
-              _kDesc,
+              assignment.assignmentData.description,
               textAlign: TextAlign.justify,
             ),
             SizedBox(height: 32),
@@ -223,9 +242,6 @@ class AssignmentDetail extends StatelessWidget {
     );
   }
 }
-
-const _kDesc =
-    "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
 
 class StatusButton extends StatelessWidget {
   final AssignmentStatus assignmentStatus;

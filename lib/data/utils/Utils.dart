@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 String getFormattedTime(DateTime dateTime) {
-  return DateFormat('MMM d h${dateTime.minute != 0 ? ':mm' : ''} a')
+  return DateFormat('d MMM h${dateTime.minute != 0 ? ':mm' : ''} a')
       .format(dateTime);
 }
 
