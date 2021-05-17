@@ -152,9 +152,9 @@ class TeacherRating {
 
   factory TeacherRating.fromJson(Map<String, dynamic> json) {
     return TeacherRating(
-        performance: json['performance'],
-        accuracy: json['accuracy'],
-        availability: json['availability']);
+        performance: double.tryParse(json['performance'].toString()) ?? 0,
+        accuracy: double.tryParse(json['accuracy'].toString()) ?? 0,
+        availability: double.tryParse(json['availability'].toString()) ?? 0);
   }
 }
 
@@ -303,7 +303,7 @@ class TeachersAssignments {
   final String teacherId;
   final double amount;
   final DateTime time;
-  final TeacherAssignmentStatus status;
+  TeacherAssignmentStatus status;
   final TeacherRating? rating;
   final List<String> assignmentFiles;
   late final AssignmentData assignmentData;

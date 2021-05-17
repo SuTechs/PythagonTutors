@@ -119,133 +119,13 @@ class AssignmentListTile extends StatelessWidget {
   }
 }
 
-/// assignment details
-
-class AssignmentDetail extends StatelessWidget {
-  final String heroTag;
-  final TeachersAssignments assignment;
-
-  const AssignmentDetail(
-      {Key? key, required this.heroTag, required this.assignment})
-      : super(key: key);
-
-  Widget getTitle(String title, BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          title,
-          style: context.textTheme.caption,
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: GestureDetector(
-          onTap: () {
-            Get.back();
-          },
-          child: Icon(
-            Icons.clear,
-            color: kBlueColor,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// assignment list tile
-            Hero(
-              tag: heroTag,
-              child: AssignmentListTile(
-                isDetailPage: true,
-                assignment: assignment,
-              ),
-            ),
-            SizedBox(height: 32),
-
-            /// desc
-
-            getTitle('Description', context),
-            Text(
-              assignment.assignmentData.description,
-              textAlign: TextAlign.justify,
-            ),
-            SizedBox(height: 32),
-
-            /// attachments
-            getTitle('Attachments', context),
-            Row(
-              children: [
-                for (String url in assignment.assignmentData.referenceFiles)
-                  AttachmentButton(url: url),
-
-                /// test
-                for (Map<String, String> s in _images)
-                  AttachmentButton(
-                    url: s['link']!,
-                    key: UniqueKey(),
-                  ),
-              ],
-            ),
-
-            Spacer(),
-
-            /// buttons
-            Row(
-              children: [
-                /// sorry
-                Expanded(
-                  child: SizedBox(
-                    height: 42,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: kBlueColor)),
-                      onPressed: () {},
-                      child: Text(
-                        'Sorry',
-                        style: TextStyle(color: kBlueColor),
-                      ),
-                    ),
-                  ),
-                ),
-
-                SizedBox(width: 24),
-
-                /// im in
-                Expanded(
-                  child: SizedBox(
-                    height: 42,
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                          backgroundColor: MaterialStateColor.resolveWith(
-                              (states) => kBlueColor)),
-                      onPressed: () {},
-                      child: Text('I\'m in'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            //StatusButton(assignmentStatus: AssignmentStatus.Completed),
-
-            SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-}
+/// status buttons
 
 class StatusButton extends StatelessWidget {
+  final VoidCallback onPressed;
   final AssignmentStatus assignmentStatus;
   const StatusButton(
-      {Key? key, this.assignmentStatus = AssignmentStatus.Pending})
+      {Key? key, required this.assignmentStatus, required this.onPressed})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -262,7 +142,7 @@ class StatusButton extends StatelessWidget {
                         backgroundColor: MaterialStateColor.resolveWith(
                             (states) =>
                                 _kButtonStatusColors[assignmentStatus]!)),
-                    onPressed: () {},
+                    onPressed: onPressed,
                     label: Text(_kButtonStatusText[assignmentStatus]!),
                     icon: Icon(
                       _kButtonStatusIcons[assignmentStatus]!,
@@ -274,7 +154,7 @@ class StatusButton extends StatelessWidget {
                       side: BorderSide(
                           color: _kButtonStatusColors[assignmentStatus]!),
                     ),
-                    onPressed: () {},
+                    onPressed: onPressed,
                     label: Text(
                       _kButtonStatusText[assignmentStatus]!,
                       style: TextStyle(
@@ -299,14 +179,53 @@ enum AssignmentStatus {
   Uploaded,
   Rejected,
   Completed,
+  Rated,
 }
+
+// const _kButtonStatusColors = {
+//   AssignmentStatus.Pending: kBlueColor,
+//   AssignmentStatus.NotAssigned: Colors.red,
+//   AssignmentStatus.Rejected: Colors.red,
+//   AssignmentStatus.Upload: kBlueColor,
+//   AssignmentStatus.Uploaded: kBlueColor,
+//   AssignmentStatus.Completed: Colors.green,
+// };
+const _kButtonStatusColors = {
+  AssignmentStatus.Pending: kBlueColor,
+  AssignmentStatus.NotAssigned: kBlueColor,
+  AssignmentStatus.Rejected: kBlueColor,
+  AssignmentStatus.Upload: kBlueColor,
+  AssignmentStatus.Uploaded: kBlueColor,
+  AssignmentStatus.Completed: kBlueColor,
+  AssignmentStatus.Rated: kBlueColor,
+};
+const _kButtonStatusText = {
+  AssignmentStatus.Pending: 'Pending Confirmation',
+  AssignmentStatus.NotAssigned: 'Not Assigned',
+  AssignmentStatus.Rejected: 'Rejected',
+  AssignmentStatus.Upload: 'Upload Attachments',
+  AssignmentStatus.Uploaded: 'In Review',
+  AssignmentStatus.Completed: 'Completed',
+  AssignmentStatus.Rated: 'Rating',
+};
+const _kButtonStatusIcons = {
+  AssignmentStatus.Pending: Icons.access_time_outlined,
+  AssignmentStatus.NotAssigned: Icons.clear,
+  AssignmentStatus.Rejected: Icons.error_outline,
+  AssignmentStatus.Upload: Icons.add,
+  AssignmentStatus.Uploaded: Icons.access_time_rounded,
+  AssignmentStatus.Completed: Icons.done,
+  AssignmentStatus.Rated: Icons.star_sharp,
+};
 
 /// attachments buttons
 
 class AttachmentButton extends StatefulWidget {
   final String url;
+  final bool isName;
 
-  const AttachmentButton({Key? key, required this.url}) : super(key: key);
+  const AttachmentButton({Key? key, required this.url, this.isName = false})
+      : super(key: key);
 
   @override
   _AttachmentButtonState createState() => _AttachmentButtonState();
@@ -392,9 +311,9 @@ class _AttachmentButtonState extends State<AttachmentButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(right: 12),
-      decoration: isDownloading
+    final f = Container(
+      margin: widget.isName ? null : EdgeInsets.only(right: 12),
+      decoration: isDownloading || widget.isName
           ? null
           : BoxDecoration(
               borderRadius: BorderRadius.circular(6.0),
@@ -426,34 +345,19 @@ class _AttachmentButtonState extends State<AttachmentButton> {
                 widget.url.split('/').last,
                 size: 46,
               ),
-              onTap: () async {
-                if (_taskId != 'hello') {
-                  final b = await FlutterDownloader.open(taskId: _taskId);
-                  if (b) return;
-                }
-
-                Get.snackbar(
-                    "Downloading!", 'Chek notification for more details.');
-
-                setState(() {
-                  isDownloading = true;
-                });
-
-                await onFileClick().catchError((e) {
-                  printError(info: 'Error #2325 = $e');
-
-                  showError("Error #2325",
-                      'Something went wrong. We will try to fix it ASAP!');
-                });
-
-                await Future.delayed(Duration(milliseconds: 2000));
-
-                setState(() {
-                  isDownloading = false;
-                });
-              },
+              onTap: onDownload,
             ),
     );
+
+    if (widget.isName)
+      return ListTile(
+        contentPadding: EdgeInsets.all(0),
+        leading: f,
+        title: Text(widget.url.split('/').last),
+        onTap: onDownload,
+      );
+
+    return f;
   }
 
   static void showError(String title, String message) {
@@ -463,6 +367,34 @@ class _AttachmentButtonState extends State<AttachmentButton> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
     );
+  }
+
+  void onDownload() async {
+    if (isDownloading) return;
+
+    if (_taskId != 'hello') {
+      final b = await FlutterDownloader.open(taskId: _taskId);
+      if (b) return;
+    }
+
+    Get.snackbar("Downloading!", 'Chek notification for more details.');
+
+    setState(() {
+      isDownloading = true;
+    });
+
+    await onFileClick().catchError((e) {
+      printError(info: 'Error #2325 = $e');
+
+      showError(
+          "Error #2325", 'Something went wrong. We will try to fix it ASAP!');
+    });
+
+    await Future.delayed(Duration(milliseconds: 2000));
+
+    setState(() {
+      isDownloading = false;
+    });
   }
 
   Future<void> onFileClick() async {
@@ -507,58 +439,334 @@ class _AttachmentButtonState extends State<AttachmentButton> {
   }
 }
 
-// const _kButtonStatusColors = {
-//   AssignmentStatus.Pending: kBlueColor,
-//   AssignmentStatus.NotAssigned: Colors.red,
-//   AssignmentStatus.Rejected: Colors.red,
-//   AssignmentStatus.Upload: kBlueColor,
-//   AssignmentStatus.Uploaded: kBlueColor,
-//   AssignmentStatus.Completed: Colors.green,
-// };
-const _kButtonStatusColors = {
-  AssignmentStatus.Pending: kBlueColor,
-  AssignmentStatus.NotAssigned: kBlueColor,
-  AssignmentStatus.Rejected: kBlueColor,
-  AssignmentStatus.Upload: kBlueColor,
-  AssignmentStatus.Uploaded: kBlueColor,
-  AssignmentStatus.Completed: kBlueColor,
-};
-const _kButtonStatusText = {
-  AssignmentStatus.Pending: 'Pending Confirmation',
-  AssignmentStatus.NotAssigned: 'Not Assigned',
-  AssignmentStatus.Rejected: 'Rejected',
-  AssignmentStatus.Upload: 'Upload Attachments',
-  AssignmentStatus.Uploaded: 'In Review',
-  AssignmentStatus.Completed: 'Completed',
-};
-const _kButtonStatusIcons = {
-  AssignmentStatus.Pending: Icons.access_time_outlined,
-  AssignmentStatus.NotAssigned: Icons.clear,
-  AssignmentStatus.Rejected: Icons.error_outline,
-  AssignmentStatus.Upload: Icons.add,
-  AssignmentStatus.Uploaded: Icons.access_time_rounded,
-  AssignmentStatus.Completed: Icons.done,
-};
+/// assignment details
 
-const _images = [
-  // {
-  //   'name': 'Arches National Park',
-  //   'link':
-  //       'https://upload.wikimedia.org/wikipedia/commons/6/60/The_Organ_at_Arches_National_Park_Utah_Corrected.jpg'
-  // },
-  // {
-  //   'name': 'Canyonlands National Park',
-  //   'link':
-  //       'https://upload.wikimedia.org/wikipedia/commons/7/78/Canyonlands_National_Park%E2%80%A6Needles_area_%286294480744%29.jpg'
-  // },
-  // {
-  //   'name': 'Death Valley National Park',
-  //   'link':
-  //       'https://upload.wikimedia.org/wikipedia/commons/b/b2/Sand_Dunes_in_Death_Valley_National_Park.jpg'
-  // },
-  {
-    'name': 'Gates of the Arctic National Park and Preserve',
-    'link':
-        'https://upload.wikimedia.org/wikipedia/commons/e/e4/GatesofArctic.jpg'
+class AssignmentDetail extends StatefulWidget {
+  final String heroTag;
+  final TeachersAssignments assignment;
+
+  const AssignmentDetail(
+      {Key? key, required this.heroTag, required this.assignment})
+      : super(key: key);
+
+  @override
+  _AssignmentDetailState createState() => _AssignmentDetailState();
+
+  static AssignmentStatus getAssignmentStatus(TeacherAssignmentStatus ta) {
+    switch (ta) {
+      case TeacherAssignmentStatus.Interested:
+        return AssignmentStatus.Pending;
+
+      case TeacherAssignmentStatus.Assigned:
+        return AssignmentStatus.Upload;
+
+      case TeacherAssignmentStatus.NotAssigned:
+        return AssignmentStatus.NotAssigned;
+
+      case TeacherAssignmentStatus.Completed:
+        return AssignmentStatus.Uploaded;
+
+      case TeacherAssignmentStatus.Rejected:
+        return AssignmentStatus.Rejected;
+
+      case TeacherAssignmentStatus.Closed:
+        return AssignmentStatus.Completed;
+
+      case TeacherAssignmentStatus.Rated:
+        return AssignmentStatus.Rated;
+
+      default:
+        return AssignmentStatus.NotAssigned;
+    }
   }
-];
+}
+
+class _AssignmentDetailState extends State<AssignmentDetail> {
+  Widget getTitle(String title, BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          title,
+          style: context.textTheme.caption,
+        ),
+      );
+
+  void updateButtons(TeacherAssignmentStatus status) {
+    setState(() {
+      widget.assignment.status = status;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: GestureDetector(
+          onTap: () {
+            Get.back();
+          },
+          child: Icon(
+            Icons.clear,
+            color: kBlueColor,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// assignment list tile
+            Hero(
+              tag: widget.heroTag,
+              child: AssignmentListTile(
+                isDetailPage: true,
+                assignment: widget.assignment,
+              ),
+            ),
+            SizedBox(height: 32),
+
+            /// desc
+
+            getTitle('Description', context),
+            Text(
+              widget.assignment.assignmentData.description,
+              textAlign: TextAlign.justify,
+            ),
+            SizedBox(height: 32),
+
+            /// attachments
+            if (widget.assignment.assignmentData.referenceFiles.isNotEmpty)
+              getTitle('Attachments', context),
+            Row(
+              children: [
+                for (String url
+                    in widget.assignment.assignmentData.referenceFiles)
+                  AttachmentButton(url: url),
+              ],
+            ),
+            SizedBox(height: 32),
+
+            /// uploaded files
+            if (widget.assignment.assignmentFiles.isNotEmpty)
+              getTitle('Uploaded Files', context),
+            for (String url in widget.assignment.assignmentFiles)
+              AttachmentButton(url: url, isName: true),
+            SizedBox(height: 32),
+
+            /// upload files
+            if (widget.assignment.status == TeacherAssignmentStatus.Assigned)
+              Expanded(
+                child: UploadAssignmentFiles(
+                  onFilesUploaded: (urls) {
+                    setState(() {
+                      widget.assignment.assignmentFiles.addAll(urls);
+
+                      // ToDo: add uploaded url to collection
+
+                      widget.assignment.status =
+                          TeacherAssignmentStatus.Completed;
+                    });
+                  },
+                ),
+              ),
+
+            if (widget.assignment.status != TeacherAssignmentStatus.Assigned)
+              Spacer(),
+
+            /// buttons
+
+            if (widget.assignment.status == TeacherAssignmentStatus.Sent)
+              Row(
+                children: [
+                  /// sorry
+                  Expanded(
+                    child: SizedBox(
+                      height: 42,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: kBlueColor)),
+                        onPressed: () {
+                          TeachersAssignments.changeStatus(
+                              TeacherAssignmentStatus.NotInterested,
+                              widget.assignment.id);
+                          Get.back();
+                        },
+                        child: Text(
+                          'Sorry',
+                          style: TextStyle(color: kBlueColor),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(width: 24),
+
+                  /// im in
+                  Expanded(
+                    child: SizedBox(
+                      height: 42,
+                      child: ElevatedButton(
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateColor.resolveWith(
+                                (states) => kBlueColor)),
+                        onPressed: () {
+                          TeachersAssignments.changeStatus(
+                              TeacherAssignmentStatus.Interested,
+                              widget.assignment.id);
+
+                          updateButtons(TeacherAssignmentStatus.Interested);
+                        },
+                        child: Text('I\'m in'),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else if (widget.assignment.status !=
+                TeacherAssignmentStatus.Assigned)
+              StatusButton(
+                assignmentStatus: AssignmentDetail.getAssignmentStatus(
+                    widget.assignment.status),
+                onPressed: () {
+                  print('Status = ${widget.assignment.status}');
+                  if (widget.assignment.status !=
+                      TeacherAssignmentStatus.Assigned) return;
+                },
+              ),
+
+            SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// upload files
+
+class UploadAssignmentFiles extends StatefulWidget {
+  final void Function(List<String>) onFilesUploaded;
+
+  const UploadAssignmentFiles({Key? key, required this.onFilesUploaded})
+      : super(key: key);
+
+  @override
+  _UploadAssignmentFilesState createState() => _UploadAssignmentFilesState();
+}
+
+class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
+  final List<String> filesToUpload = [];
+  bool isUploading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Upload',
+            style: context.textTheme.caption,
+          ),
+        ),
+
+        /// add files
+
+        Expanded(
+          child: ListView(
+            children: [
+              for (String path in filesToUpload)
+                ListTile(
+                  contentPadding: EdgeInsets.all(0),
+                  leading: FileIcon(path.split('/').last, size: 42),
+                  title: Text(path.split('/').last),
+                  trailing: GestureDetector(
+                    child: Icon(Icons.clear),
+                    onTap: () {
+                      setState(() {
+                        filesToUpload.remove(path);
+                      });
+                    },
+                  ),
+                ),
+              ListTile(
+                contentPadding: EdgeInsets.all(0),
+                leading: Icon(Icons.add),
+                title: Text('Add Files'),
+                onTap: () {
+                  setState(() {
+                    filesToUpload.add('store/abcd.pdf');
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(
+          height: 42,
+          width: double.infinity,
+          child: isUploading
+              ? OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: kBlueColor),
+                  ),
+                  onPressed: () {},
+                  child: SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: kBlueColor,
+                    ),
+                  ),
+                )
+              : OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: kBlueColor),
+                  ),
+                  onPressed: uploadFiles,
+                  label: Text(
+                    'Upload & Submit',
+                    style: TextStyle(color: kBlueColor),
+                  ),
+                  icon: Icon(
+                    Icons.upload_outlined,
+                    color: kBlueColor,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  void uploadFiles() async {
+    if (filesToUpload.isEmpty) {
+      Get.snackbar(
+        'No Files!',
+        'Please add files before uploading.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+
+      return;
+    }
+
+    if (isUploading) return;
+
+    setState(() {
+      isUploading = true;
+    });
+
+    await Future.delayed(Duration(seconds: 2));
+
+    setState(() {
+      isUploading = false;
+    });
+
+    widget.onFilesUploaded(filesToUpload);
+  }
+}
