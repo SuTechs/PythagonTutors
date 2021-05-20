@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import 'package:tutors/data/utils/modal/collectionRef.dart';
 
+import '/data/utils/modal/collectionRef.dart';
+import '/data/utils/modal/user.dart';
 import '../database.dart';
 
 class AssignmentListController extends GetxController {
@@ -17,8 +18,8 @@ class AssignmentListController extends GetxController {
     super.onInit();
 
     CollectionRef.teachersAssignments
-        // .where('teacher', isEqualTo: UserData.teacher.id)
-        .where('teacher', isEqualTo: '+91 7667323338')
+        .where('teacher', isEqualTo: UserData.teacher.id)
+        // .where('teacher', isEqualTo: '+91 7667323338')
         .snapshots()
         .listen((snapshot) {
       _handleData(snapshot.docs);

@@ -1,17 +1,19 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:get/utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:tutors/data/database.dart';
-import 'package:tutors/data/utils/Utils.dart';
-import 'package:tutors/widgets/fileIcons.dart';
 
+import '/data/database.dart';
+import '/data/utils/Utils.dart';
+import '/data/utils/modal/user.dart';
+import '/widgets/fileIcons.dart';
 import '../constants.dart';
 
 class AssignmentsListView extends StatelessWidget {
@@ -22,26 +24,30 @@ class AssignmentsListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        itemCount: assignments.length + 1,
-        itemBuilder: (_, index) {
-          if (index == assignments.length) return SizedBox(height: 16);
-          return Hero(
-              tag: 'Hero Tag $index',
-              child: AssignmentListTile(
-                assignment: assignments[index],
-                onTap: () {
-                  Get.to(
-                    () => AssignmentDetail(
-                      heroTag: 'Hero Tag $index',
+      body: assignments.isEmpty
+          ? Center(
+              child: Text('Nothing here yet!'),
+            )
+          : ListView.builder(
+              itemCount: assignments.length + 1,
+              itemBuilder: (_, index) {
+                if (index == assignments.length) return SizedBox(height: 16);
+                return Hero(
+                    tag: 'Hero Tag $index',
+                    child: AssignmentListTile(
                       assignment: assignments[index],
-                    ),
-                    transition: Transition.cupertinoDialog,
-                  );
-                },
-              ));
-        },
-      ),
+                      onTap: () {
+                        Get.to(
+                          () => AssignmentDetail(
+                            heroTag: 'Hero Tag $index',
+                            assignment: assignments[index],
+                          ),
+                          transition: Transition.cupertinoDialog,
+                        );
+                      },
+                    ));
+              },
+            ),
     );
   }
 }
@@ -122,10 +128,14 @@ class AssignmentListTile extends StatelessWidget {
 /// status buttons
 
 class StatusButton extends StatelessWidget {
+  final TeacherRating? rating;
   final VoidCallback onPressed;
   final AssignmentStatus assignmentStatus;
   const StatusButton(
-      {Key? key, required this.assignmentStatus, required this.onPressed})
+      {Key? key,
+      required this.assignmentStatus,
+      required this.onPressed,
+      this.rating})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -143,7 +153,9 @@ class StatusButton extends StatelessWidget {
                             (states) =>
                                 _kButtonStatusColors[assignmentStatus]!)),
                     onPressed: onPressed,
-                    label: Text(_kButtonStatusText[assignmentStatus]!),
+                    label: Text(assignmentStatus == AssignmentStatus.Rated
+                        ? '${_kButtonStatusText[assignmentStatus]!} ${rating!.avgRating.toStringAsFixed(1)}/5'
+                        : _kButtonStatusText[assignmentStatus]!),
                     icon: Icon(
                       _kButtonStatusIcons[assignmentStatus]!,
                       color: Colors.white,
@@ -206,7 +218,7 @@ const _kButtonStatusText = {
   AssignmentStatus.Upload: 'Upload Attachments',
   AssignmentStatus.Uploaded: 'In Review',
   AssignmentStatus.Completed: 'Completed',
-  AssignmentStatus.Rated: 'Rating',
+  AssignmentStatus.Rated: 'Rated',
 };
 const _kButtonStatusIcons = {
   AssignmentStatus.Pending: Icons.access_time_outlined,
@@ -219,7 +231,6 @@ const _kButtonStatusIcons = {
 };
 
 /// attachments buttons
-
 class AttachmentButton extends StatefulWidget {
   final String url;
   final bool isName;
@@ -309,6 +320,15 @@ class _AttachmentButtonState extends State<AttachmentButton> {
     //   showError('Failed!', 'The download could not be completed.');
   }
 
+  String get getFileName {
+    if (widget.url.contains('key')) {
+      final f = widget.url.split('key');
+
+      if (f.length > 2) return Uri.decodeFull(f[1]).toString();
+    }
+    return Uri.decodeFull(widget.url).toString().split('/').last;
+  }
+
   @override
   Widget build(BuildContext context) {
     final f = Container(
@@ -326,7 +346,7 @@ class _AttachmentButtonState extends State<AttachmentButton> {
                   radius: 22,
                   backgroundColor: Colors.transparent,
                   child: FileIcon(
-                    widget.url.split('/').last,
+                    getFileName,
                     size: 40,
                   ),
                 ),
@@ -342,7 +362,7 @@ class _AttachmentButtonState extends State<AttachmentButton> {
             )
           : GestureDetector(
               child: FileIcon(
-                widget.url.split('/').last,
+                getFileName,
                 size: 46,
               ),
               onTap: onDownload,
@@ -353,7 +373,9 @@ class _AttachmentButtonState extends State<AttachmentButton> {
       return ListTile(
         contentPadding: EdgeInsets.all(0),
         leading: f,
-        title: Text(widget.url.split('/').last),
+        title: Text(
+          getFileName,
+        ),
         onTap: onDownload,
       );
 
@@ -439,8 +461,158 @@ class _AttachmentButtonState extends State<AttachmentButton> {
   }
 }
 
-/// assignment details
+/// upload files
+class UploadAssignmentFiles extends StatefulWidget {
+  final void Function(List<String>) onFilesUploaded;
+  final String assignmentId;
 
+  const UploadAssignmentFiles(
+      {Key? key, required this.onFilesUploaded, required this.assignmentId})
+      : super(key: key);
+
+  @override
+  _UploadAssignmentFilesState createState() => _UploadAssignmentFilesState();
+}
+
+class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
+  final List<File> filesToUpload = [];
+  bool isUploading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Upload',
+            style: context.textTheme.caption,
+          ),
+        ),
+
+        /// add files
+
+        Expanded(
+          child: ListView(
+            children: [
+              for (int i = 0; i < filesToUpload.length; i++)
+                ListTile(
+                  contentPadding: EdgeInsets.all(0),
+                  leading:
+                      FileIcon(filesToUpload[i].path.split('/').last, size: 42),
+                  title: Text(filesToUpload[i].path.split('/').last),
+                  trailing: GestureDetector(
+                    child: Icon(Icons.clear),
+                    onTap: () {
+                      setState(() {
+                        filesToUpload.removeAt(i);
+                      });
+                    },
+                  ),
+                ),
+              ListTile(
+                contentPadding: EdgeInsets.all(0),
+                leading: Icon(Icons.add),
+                title: Text('Add Files'),
+                onTap: _pickFiles,
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(
+          height: 42,
+          width: double.infinity,
+          child: isUploading
+              ? OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: kBlueColor),
+                  ),
+                  onPressed: () {},
+                  child: SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: kBlueColor,
+                    ),
+                  ),
+                )
+              : OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: kBlueColor),
+                  ),
+                  onPressed: _uploadFiles,
+                  label: Text(
+                    'Upload & Submit',
+                    style: TextStyle(color: kBlueColor),
+                  ),
+                  icon: Icon(
+                    Icons.upload_outlined,
+                    color: kBlueColor,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+
+    if (result != null) {
+      final files = result.paths.map((path) => File(path!)).toList();
+
+      setState(() {
+        filesToUpload.addAll(files);
+      });
+    }
+  }
+
+  void _uploadFiles() async {
+    if (filesToUpload.isEmpty) {
+      Get.snackbar(
+        'No Files!',
+        'Please add files before uploading.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+
+      return;
+    }
+
+    if (isUploading) return;
+
+    setState(() {
+      isUploading = true;
+    });
+
+    /// uploading file
+
+    final urls = <String>[];
+
+    for (final f in filesToUpload) {
+      final r = await FirebaseStorage.instance
+          .ref('Assignments')
+          .child(widget.assignmentId)
+          .child(UserData.teacher.id)
+          .child('key' + f.path.split('/').last + 'key')
+          .putFile(f);
+
+      final url = await r.ref.getDownloadURL();
+      urls.add(url);
+    }
+
+    setState(() {
+      isUploading = false;
+    });
+
+    widget.onFilesUploaded(urls);
+  }
+}
+
+/// assignment details
 class AssignmentDetail extends StatefulWidget {
   final String heroTag;
   final TeachersAssignments assignment;
@@ -489,12 +661,6 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
           style: context.textTheme.caption,
         ),
       );
-
-  void updateButtons(TeacherAssignmentStatus status) {
-    setState(() {
-      widget.assignment.status = status;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -549,30 +715,51 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
             SizedBox(height: 32),
 
             /// uploaded files
-            if (widget.assignment.assignmentFiles.isNotEmpty)
-              getTitle('Uploaded Files', context),
-            for (String url in widget.assignment.assignmentFiles)
-              AttachmentButton(url: url, isName: true),
-            SizedBox(height: 32),
+            if (widget.assignment.assignmentFiles.isNotEmpty &&
+                widget.assignment.status != TeacherAssignmentStatus.Assigned)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    getTitle('Uploaded Files', context),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          for (String url in widget.assignment.assignmentFiles)
+                            AttachmentButton(url: url, isName: true),
+                          SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
 
             /// upload files
-            if (widget.assignment.status == TeacherAssignmentStatus.Assigned)
+            else if (widget.assignment.status ==
+                TeacherAssignmentStatus.Assigned)
               Expanded(
                 child: UploadAssignmentFiles(
+                  assignmentId: widget.assignment.assignmentData.id,
                   onFilesUploaded: (urls) {
+                    /// updating ui
                     setState(() {
-                      widget.assignment.assignmentFiles.addAll(urls);
-
-                      // ToDo: add uploaded url to collection
-
                       widget.assignment.status =
                           TeacherAssignmentStatus.Completed;
+                      widget.assignment.assignmentFiles.addAll(urls);
                     });
+
+                    /// changing status of assignment
+                    TeachersAssignments.changeStatus(
+                        TeacherAssignmentStatus.Completed,
+                        widget.assignment.id);
+
+                    /// changing status of assignment
+                    TeachersAssignments.updateFiles(urls, widget.assignment.id);
                   },
                 ),
-              ),
-
-            if (widget.assignment.status != TeacherAssignmentStatus.Assigned)
+              )
+            else
               Spacer(),
 
             /// buttons
@@ -616,7 +803,10 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
                               TeacherAssignmentStatus.Interested,
                               widget.assignment.id);
 
-                          updateButtons(TeacherAssignmentStatus.Interested);
+                          setState(() {
+                            widget.assignment.status =
+                                TeacherAssignmentStatus.Interested;
+                          });
                         },
                         child: Text('I\'m in'),
                       ),
@@ -627,6 +817,7 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
             else if (widget.assignment.status !=
                 TeacherAssignmentStatus.Assigned)
               StatusButton(
+                rating: widget.assignment.rating,
                 assignmentStatus: AssignmentDetail.getAssignmentStatus(
                     widget.assignment.status),
                 onPressed: () {
@@ -641,132 +832,5 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
         ),
       ),
     );
-  }
-}
-
-/// upload files
-
-class UploadAssignmentFiles extends StatefulWidget {
-  final void Function(List<String>) onFilesUploaded;
-
-  const UploadAssignmentFiles({Key? key, required this.onFilesUploaded})
-      : super(key: key);
-
-  @override
-  _UploadAssignmentFilesState createState() => _UploadAssignmentFilesState();
-}
-
-class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
-  final List<String> filesToUpload = [];
-  bool isUploading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            'Upload',
-            style: context.textTheme.caption,
-          ),
-        ),
-
-        /// add files
-
-        Expanded(
-          child: ListView(
-            children: [
-              for (String path in filesToUpload)
-                ListTile(
-                  contentPadding: EdgeInsets.all(0),
-                  leading: FileIcon(path.split('/').last, size: 42),
-                  title: Text(path.split('/').last),
-                  trailing: GestureDetector(
-                    child: Icon(Icons.clear),
-                    onTap: () {
-                      setState(() {
-                        filesToUpload.remove(path);
-                      });
-                    },
-                  ),
-                ),
-              ListTile(
-                contentPadding: EdgeInsets.all(0),
-                leading: Icon(Icons.add),
-                title: Text('Add Files'),
-                onTap: () {
-                  setState(() {
-                    filesToUpload.add('store/abcd.pdf');
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-
-        SizedBox(
-          height: 42,
-          width: double.infinity,
-          child: isUploading
-              ? OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: kBlueColor),
-                  ),
-                  onPressed: () {},
-                  child: SizedBox(
-                    height: 30,
-                    width: 30,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: kBlueColor,
-                    ),
-                  ),
-                )
-              : OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: kBlueColor),
-                  ),
-                  onPressed: uploadFiles,
-                  label: Text(
-                    'Upload & Submit',
-                    style: TextStyle(color: kBlueColor),
-                  ),
-                  icon: Icon(
-                    Icons.upload_outlined,
-                    color: kBlueColor,
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-
-  void uploadFiles() async {
-    if (filesToUpload.isEmpty) {
-      Get.snackbar(
-        'No Files!',
-        'Please add files before uploading.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-
-      return;
-    }
-
-    if (isUploading) return;
-
-    setState(() {
-      isUploading = true;
-    });
-
-    await Future.delayed(Duration(seconds: 2));
-
-    setState(() {
-      isUploading = false;
-    });
-
-    widget.onFilesUploaded(filesToUpload);
   }
 }
