@@ -173,22 +173,25 @@ class Teacher {
   List<String> subjectsIds;
   final double balance;
   final bool isVerified;
+  final String accountInfo;
 
-  Teacher(
-      {required this.id,
-      required this.name,
-      required this.phone,
-      required this.profilePic,
-      required this.email,
-      required this.rating,
-      required this.subjectsIds,
-      required this.dateOfBirth,
-      required this.gender,
-      required this.college,
-      required this.course,
-      required this.balance,
-      required this.totalRating,
-      required this.isVerified});
+  Teacher({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.profilePic,
+    required this.email,
+    required this.rating,
+    required this.subjectsIds,
+    required this.dateOfBirth,
+    required this.gender,
+    required this.college,
+    required this.course,
+    required this.balance,
+    required this.totalRating,
+    required this.isVerified,
+    required this.accountInfo,
+  });
 
   @override
   bool operator ==(Object other) {
@@ -226,27 +229,29 @@ class Teacher {
         if (isEdit) 'createdAt': Timestamp.now(),
         'updatedAt': Timestamp.now(),
         'isVerified': isVerified,
+        'accountInfo': accountInfo,
       };
 
   factory Teacher.fromJson(Map<String, dynamic> json) {
     return Teacher(
-        id: json['id'],
-        name: json['name'],
-        email: json['email'],
-        phone: json['phone'],
-        balance: json['balance'] ?? 0,
-        profilePic: json['profilePic'],
-        subjectsIds: (json['subjects'] as List<dynamic>)
-            .map((e) => e as String)
-            .toList(),
-        rating: TeacherRating.fromJson(json['rating']),
-        totalRating: json['totalRating'] ?? 0,
-        dateOfBirth: json['dateOfBirth'],
-        gender: json['gender'],
-        college:
-            College(collegeId: json['college'], collegeName: json['college']),
-        course: Course(courseId: json['course'], courseName: json['course']),
-        isVerified: json['isVerified'] ?? false);
+      id: json['id'],
+      name: json['name'],
+      email: json['email'],
+      phone: json['phone'],
+      balance: json['balance'] ?? 0,
+      profilePic: json['profilePic'],
+      subjectsIds:
+          (json['subjects'] as List<dynamic>).map((e) => e as String).toList(),
+      rating: TeacherRating.fromJson(json['rating']),
+      totalRating: json['totalRating'] ?? 0,
+      dateOfBirth: json['dateOfBirth'],
+      gender: json['gender'],
+      college:
+          College(collegeId: json['college'], collegeName: json['college']),
+      course: Course(courseId: json['course'], courseName: json['course']),
+      isVerified: json['isVerified'] ?? false,
+      accountInfo: json['accountInfo'] ?? '',
+    );
   }
 
   Future<void> addOrUpdateTeacher(bool isEdit) async {
@@ -291,7 +296,8 @@ class Teacher {
         course: Course(courseName: '', courseId: ''),
         balance: 0,
         totalRating: 0,
-        isVerified: false);
+        isVerified: false,
+        accountInfo: '');
     await newTeacher.addOrUpdateTeacher(false);
     UserData.teacher = newTeacher;
   }

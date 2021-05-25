@@ -171,14 +171,15 @@ class Profile extends StatelessWidget {
             ),
           ),
 
-          // /// gender
-          // ProfileListContainer(
-          //   title: 'Gender',
-          //   child: ProfileListContainerTile(
-          //     icon: Icons.person,
-          //     title: UserData.teacher.gender,
-          //   ),
-          // ),
+          /// gender
+          if (UserData.teacher.gender.isNotEmpty)
+            ProfileListContainer(
+              title: 'Gender',
+              child: ProfileListContainerTile(
+                icon: Icons.person,
+                title: UserData.teacher.gender,
+              ),
+            ),
 
           /// email
           ProfileListContainer(
@@ -188,6 +189,16 @@ class Profile extends StatelessWidget {
               title: UserData.teacher.email,
             ),
           ),
+
+          /// account info
+          if (UserData.teacher.accountInfo.isNotEmpty)
+            ProfileListContainer(
+              title: 'Account Info',
+              child: ProfileListContainerTile(
+                icon: Icons.attach_money,
+                title: UserData.teacher.accountInfo,
+              ),
+            ),
 
           /// Request Change / verification
           ProfileListContainer(
