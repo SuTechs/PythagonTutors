@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tutors/data/database.dart';
+import 'package:tutors/data/utils/Utils.dart';
+import 'package:tutors/data/utils/modal/user.dart';
 
 import '../constants.dart';
 
@@ -30,6 +33,7 @@ class Transaction extends StatelessWidget {
         ),
         body: Column(
           children: [
+            /// balance
             Container(
               margin: EdgeInsets.all(12),
               padding: EdgeInsets.all(16),
@@ -48,7 +52,7 @@ class Transaction extends StatelessWidget {
                   ),
                   Spacer(),
                   Text(
-                    '₹ 500',
+                    '₹ ${UserData.teacher.balance}',
                     style: TextStyle(
                       fontSize: 18,
                       color: kBlueColor,
@@ -57,20 +61,39 @@ class Transaction extends StatelessWidget {
                 ],
               ),
             ),
+
+            /// transactions
             Expanded(
-              child: ListView.separated(
-                  itemBuilder: (_, i) {
-                    return TransactionListTile(isWithdrawn: i % 2 == 0);
-                  },
-                  separatorBuilder: (_, i) {
-                    return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16),
-                      color: const Color(0xff707070),
-                      height: 0.1,
-                    );
-                  },
-                  itemCount: 10),
-            ),
+                child: FutureBuilder<List<TransactionData>>(
+              future: TransactionData.getTransaction(),
+              builder: (_, snapshot) {
+                if (snapshot.hasError) {
+                  print('Error 52527 = ${snapshot.error}');
+                  Get.snackbar(
+                    'Something went wrong!',
+                    'It looks like we got some error #2321',
+                  );
+                }
+
+                if (snapshot.hasData)
+                  return ListView.separated(
+                      itemBuilder: (_, i) {
+                        return TransactionListTile(
+                          transaction: snapshot.data![i],
+                        );
+                      },
+                      separatorBuilder: (_, i) {
+                        return Container(
+                          margin: EdgeInsets.symmetric(horizontal: 16),
+                          color: const Color(0xff707070),
+                          height: 0.1,
+                        );
+                      },
+                      itemCount: snapshot.data!.length);
+
+                return Center(child: CircularProgressIndicator());
+              },
+            )),
           ],
         ),
       ),
@@ -79,9 +102,9 @@ class Transaction extends StatelessWidget {
 }
 
 class TransactionListTile extends StatelessWidget {
-  final bool isWithdrawn;
+  final TransactionData transaction;
 
-  const TransactionListTile({Key? key, required this.isWithdrawn})
+  const TransactionListTile({Key? key, required this.transaction})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -94,26 +117,26 @@ class TransactionListTile extends StatelessWidget {
           border: Border.all(width: 0.5, color: kBlueColor),
         ),
         child: Icon(
-          isWithdrawn ? Icons.north_east : Icons.south_west,
+          transaction.isWithdrawn ? Icons.north_east : Icons.south_west,
           color: kBlueColor,
         ),
       ),
       title: Text(
-        'Money ${isWithdrawn ? 'Withdrawn' : 'Deposited'}',
+        'Money ${transaction.isWithdrawn ? 'Withdrawn' : 'Deposited'}',
         style: TextStyle(color: kBlueColor),
       ),
-      subtitle: Text('23 Apr 12:20 PM'),
+      subtitle: Text(getFormattedTime(transaction.createdAt)),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            '${isWithdrawn ? '-' : '+'} ₹500',
+            '${transaction.isWithdrawn ? '-' : '+'} ₹${transaction.amount}',
             style: TextStyle(fontSize: 16, color: kBlueColor),
           ),
           SizedBox(height: 2),
           Text(
-            'CB: ₹200',
+            'CB: ₹${transaction.closingBalance}',
             style: context.textTheme.caption,
           ),
         ],

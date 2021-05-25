@@ -31,6 +31,14 @@ class HomeLogic extends StatelessWidget {
     return FutureBuilder<bool>(
       future: Teacher.fetchIfExist(user),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          print('Error 52527 = ${snapshot.error}');
+          Get.snackbar(
+            'Something went wrong!',
+            'It looks like we got some error #2321',
+          );
+        }
+
         if (snapshot.hasData) {
           if (snapshot.data!) return NavigationHome();
 

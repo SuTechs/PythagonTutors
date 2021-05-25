@@ -238,7 +238,7 @@ class Teacher {
       name: json['name'],
       email: json['email'],
       phone: json['phone'],
-      balance: json['balance'] ?? 0,
+      balance: double.tryParse(json['balance'].toString()) ?? 0,
       profilePic: json['profilePic'],
       subjectsIds:
           (json['subjects'] as List<dynamic>).map((e) => e as String).toList(),
@@ -413,5 +413,56 @@ class AssignmentData {
           .map((e) => e as String)
           .toList(),
     );
+  }
+}
+
+/// transactions
+
+class TransactionData {
+  final String id;
+  final double amount;
+  final double closingBalance;
+  final String teacherId;
+  final String adminId;
+  final DateTime createdAt;
+  final bool isWithdrawn;
+  final String? assignmentId;
+
+  TransactionData({
+    required this.id,
+    required this.amount,
+    required this.closingBalance,
+    required this.teacherId,
+    required this.adminId,
+    required this.createdAt,
+    required this.isWithdrawn,
+    this.assignmentId,
+  });
+
+  factory TransactionData.fromJson(Map<String, dynamic> json) {
+    return TransactionData(
+      id: json['id'],
+      amount: double.tryParse(json['amount'].toString())!,
+      closingBalance: double.tryParse(json['closingBalance'].toString())!,
+      teacherId: json['teacherId'],
+      adminId: json['adminId'],
+      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      isWithdrawn: json['isWithdrawn'],
+    );
+  }
+
+  static Future<List<TransactionData>> getTransaction() async {
+    final List<TransactionData> _transactions = [];
+
+    final data = await CollectionRef.transactions
+        .where('teacherId', isEqualTo: UserData.teacher.id)
+        .get();
+
+    for (QueryDocumentSnapshot snapshot in data.docs)
+      _transactions.add(TransactionData.fromJson(snapshot.data()));
+
+    _transactions.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return _transactions;
   }
 }
