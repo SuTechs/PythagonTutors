@@ -36,7 +36,7 @@ class College {
 
     final data = await CollectionRef.colleges.get();
 
-    for (QueryDocumentSnapshot snapshot in data.docs)
+    for (QueryDocumentSnapshot<Map<String, dynamic>> snapshot in data.docs)
       _colleges.add(College.fromJson(snapshot.data()));
 
     return _colleges;
@@ -72,7 +72,7 @@ class Course {
 
     final data = await CollectionRef.courses.get();
 
-    for (QueryDocumentSnapshot snapshot in data.docs)
+    for (QueryDocumentSnapshot<Map<String, dynamic>> snapshot in data.docs)
       _courses.add(Course.fromJson(snapshot.data()));
 
     return _courses;
@@ -100,7 +100,7 @@ class Subject {
 
     final data = await CollectionRef.subjects.get();
 
-    for (QueryDocumentSnapshot snapshot in data.docs)
+    for (QueryDocumentSnapshot<Map<String, dynamic>> snapshot in data.docs)
       subjects.add(Subject.fromJson(snapshot.data()));
 
     return subjects;
@@ -458,7 +458,7 @@ class TransactionData {
         .where('teacherId', isEqualTo: UserData.teacher.id)
         .get();
 
-    for (QueryDocumentSnapshot snapshot in data.docs)
+    for (QueryDocumentSnapshot<Map<String, dynamic>> snapshot in data.docs)
       _transactions.add(TransactionData.fromJson(snapshot.data()));
 
     _transactions.sort((a, b) => a.createdAt.compareTo(b.createdAt));

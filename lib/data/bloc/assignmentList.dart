@@ -26,12 +26,13 @@ class AssignmentListController extends GetxController {
     });
   }
 
-  static void _handleData(List<QueryDocumentSnapshot> docs) async {
+  static void _handleData(
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
     final List<TeachersAssignments> a = [];
 
     /// parsing and fetching data
     try {
-      for (QueryDocumentSnapshot q in docs) {
+      for (QueryDocumentSnapshot<Map<String, dynamic>> q in docs) {
         final t = TeachersAssignments.fromJson(q.data());
         await t.fetchAssignmentData();
         a.add(t);

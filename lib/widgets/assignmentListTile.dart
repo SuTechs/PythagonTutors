@@ -321,12 +321,18 @@ class _AttachmentButtonState extends State<AttachmentButton> {
   }
 
   String get getFileName {
-    if (widget.url.contains('key')) {
-      final f = widget.url.split('key');
-
-      if (f.length > 2) return Uri.decodeFull(f[1]).toString();
+    try {
+      return FirebaseStorage.instance.refFromURL(widget.url).name;
+    } catch (e) {
+      print('Error #13121 =$e');
+      return Uri.decodeFull(widget.url).toString().split('/').last;
     }
-    return Uri.decodeFull(widget.url).toString().split('/').last;
+    // if (widget.url.contains('key')) {
+    //   final f = widget.url.split('key');
+    //
+    //   if (f.length > 2) return Uri.decodeFull(f[1]).toString();
+    // }
+    // return Uri.decodeFull(widget.url).toString().split('/').last;
   }
 
   @override
@@ -475,7 +481,7 @@ class UploadAssignmentFiles extends StatefulWidget {
 }
 
 class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
-  final List<File> filesToUpload = [];
+  final List<PlatformFile> filesToUpload = [];
   bool isUploading = false;
 
   @override
@@ -499,9 +505,8 @@ class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
               for (int i = 0; i < filesToUpload.length; i++)
                 ListTile(
                   contentPadding: EdgeInsets.all(0),
-                  leading:
-                      FileIcon(filesToUpload[i].path.split('/').last, size: 42),
-                  title: Text(filesToUpload[i].path.split('/').last),
+                  leading: FileIcon(filesToUpload[i].name, size: 42),
+                  title: Text(filesToUpload[i].name),
                   trailing: GestureDetector(
                     child: Icon(Icons.clear),
                     onTap: () {
@@ -562,10 +567,10 @@ class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
     if (result != null) {
-      final files = result.paths.map((path) => File(path!)).toList();
+      // final files = result.paths.map((path) => File(path!)).toList();
 
       setState(() {
-        filesToUpload.addAll(files);
+        filesToUpload.addAll(result.files);
       });
     }
   }
@@ -597,8 +602,8 @@ class _UploadAssignmentFilesState extends State<UploadAssignmentFiles> {
           .ref('Assignments')
           .child(widget.assignmentId)
           .child(UserData.teacher.id)
-          .child('key' + f.path.split('/').last + 'key')
-          .putFile(f);
+          .child(f.name)
+          .putFile(File(f.path!));
 
       final url = await r.ref.getDownloadURL();
       urls.add(url);
