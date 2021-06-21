@@ -1,6 +1,6 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:tutors/data/utils/NotificationManager.dart';
 import 'package:tutors/data/utils/Utils.dart';
 import 'package:tutors/screens/profile.dart';
 
@@ -88,6 +88,12 @@ class _NavigationHomeState extends State<NavigationHome> {
   int _selectedIndex = 0;
 
   @override
+  void initState() {
+    NotificationManager.init();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData(
@@ -120,22 +126,6 @@ class _NavigationHomeState extends State<NavigationHome> {
           },
         ),
         body: _screens[_selectedIndex].screens,
-      ),
-    );
-  }
-}
-
-class Logout extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: ElevatedButton(
-          child: Text('SignOut'),
-          onPressed: () {
-            FirebaseAuth.instance.signOut();
-          },
-        ),
       ),
     );
   }

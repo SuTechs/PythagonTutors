@@ -54,6 +54,17 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
+<!--       flutter local notification channel-->
+<!--        <meta-data-->
+<!--            android:name="com.google.firebase.messaging.default_notification_channel_id"-->
+<!--            android:value="pythagon_high_importance_channel" />-->
+
+
+<!--        notification icon-->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_name" />
+
 
     </application>
 </manifest>
