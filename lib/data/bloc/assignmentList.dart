@@ -34,8 +34,8 @@ class AssignmentListController extends GetxController {
     try {
       for (QueryDocumentSnapshot<Map<String, dynamic>> q in docs) {
         final t = TeachersAssignments.fromJson(q.data());
-        await t.fetchAssignmentData();
-        a.add(t);
+        final hasData = await t.fetchAssignmentData();
+        if (hasData) a.add(t);
       }
     } catch (e) {
       print('Error #23221 $e');

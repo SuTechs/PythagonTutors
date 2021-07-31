@@ -264,6 +264,7 @@ class Teacher {
   }
 
   static bool _hasTeacherData = false;
+
   static Future<bool> fetchIfExist(User user) async {
     if (_hasTeacherData) return true;
 
@@ -359,8 +360,18 @@ class TeachersAssignments {
         .update({'assignmentFiles': files});
   }
 
-  Future<void> fetchAssignmentData() async {
-    assignmentData = (await AssignmentData.getAssignmentFromId(assignmentId))!;
+  Future<bool> fetchAssignmentData() async {
+    final data = await AssignmentData.getAssignmentFromId(assignmentId);
+
+    if (data != null) {
+      assignmentData = data;
+      return true;
+    }
+
+    print('No data for this assignmentId = $assignmentId');
+    print('And TeacherAssignmentId = $id');
+
+    return false;
   }
 }
 
