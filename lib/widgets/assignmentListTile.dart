@@ -21,6 +21,7 @@ class AssignmentsListView extends StatelessWidget {
 
   const AssignmentsListView({Key? key, required this.assignments})
       : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,6 +64,7 @@ class AssignmentListTile extends StatelessWidget {
       this.isDetailPage = false,
       required this.assignment})
       : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -131,12 +133,14 @@ class StatusButton extends StatelessWidget {
   final TeacherRating? rating;
   final VoidCallback onPressed;
   final AssignmentStatus assignmentStatus;
+
   const StatusButton(
       {Key? key,
       required this.assignmentStatus,
       required this.onPressed,
       this.rating})
       : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -245,6 +249,7 @@ class AttachmentButton extends StatefulWidget {
 class _AttachmentButtonState extends State<AttachmentButton> {
   bool isDownloading = false;
   late String _taskId = 'hello';
+
   // ReceivePort _port = ReceivePort();
   // double downloadProgress = 0;
 
@@ -707,9 +712,21 @@ class _AssignmentDetailState extends State<AssignmentDetail> {
             ),
             SizedBox(height: 32),
 
-            /// attachments
+            /// assignmentFiles
+            if (widget.assignment.assignmentData.assignmentFiles.isNotEmpty)
+              getTitle('Assignment Files', context),
+            Row(
+              children: [
+                for (String url
+                    in widget.assignment.assignmentData.assignmentFiles)
+                  AttachmentButton(url: url),
+              ],
+            ),
+            SizedBox(height: 32),
+
+            /// referenceFiles
             if (widget.assignment.assignmentData.referenceFiles.isNotEmpty)
-              getTitle('Attachments', context),
+              getTitle('Reference Files', context),
             Row(
               children: [
                 for (String url

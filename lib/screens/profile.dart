@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tutors/constants.dart';
@@ -222,6 +223,9 @@ class Profile extends StatelessWidget {
             child: ProfileListContainerTile(
               icon: Icons.logout,
               title: 'Sign Out',
+              onTap: () {
+                FirebaseAuth.instance.signOut();
+              },
             ),
           ),
         ],

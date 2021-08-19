@@ -392,6 +392,7 @@ class AssignmentData {
   AssignmentType assignmentType;
   DateTime time;
   List<String> referenceFiles;
+  List<String> assignmentFiles;
 
   AssignmentData({
     required this.id,
@@ -401,6 +402,7 @@ class AssignmentData {
     required this.assignmentType,
     required this.time,
     required this.referenceFiles,
+    required this.assignmentFiles,
   });
 
   static Future<AssignmentData?> getAssignmentFromId(String id) async {
@@ -420,9 +422,16 @@ class AssignmentData {
           .singleWhere((element) => element.value == json['assignmentType'])
           .key,
       time: (json['time'] as Timestamp).toDate(),
-      referenceFiles: (json['referenceFiles'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
+      referenceFiles: json['referenceFiles'] != null
+          ? (json['referenceFiles'] as List<dynamic>)
+              .map((e) => e as String)
+              .toList()
+          : [],
+      assignmentFiles: json['assignmentFiles'] != null
+          ? (json['assignmentFiles'] as List<dynamic>)
+              .map((e) => e as String)
+              .toList()
+          : [],
     );
   }
 }
