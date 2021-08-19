@@ -10,7 +10,7 @@ String getFormattedTime(DateTime dateTime) {
 
 void launchWhatsapp({String message = ''}) async {
   // const url = "https://wa.me/917667323338?text=YourTextHere";
-  final url = "whatsapp://send?phone=917667323338&text=$message";
+  final url = "whatsapp://send?phone=917779984115&text=$message";
   final encoded = Uri.encodeFull(url);
 
   if (await canLaunch(encoded)) {
