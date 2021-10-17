@@ -13,4 +13,7 @@ class CollectionRef {
 
   static final transactions =
       FirebaseFirestore.instance.collection('Transactions');
+
+  static final notifications =
+      FirebaseFirestore.instance.collection('Notifications');
 }

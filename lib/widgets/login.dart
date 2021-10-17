@@ -1,6 +1,8 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '/constants.dart';
 import '/data/database.dart';
@@ -85,6 +87,10 @@ class WelcomeLogin extends StatelessWidget {
                         style: TextStyle(
                           color: kLogoRedColor,
                         ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () async {
+                            await launch("https://pythagon.com/service/");
+                          },
                       ),
                     ],
                   ),
@@ -234,6 +240,7 @@ class LoginInputScreen extends StatelessWidget {
     this.keyboardType,
     this.prefixText,
   }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -369,6 +376,7 @@ class SelectMultipleSubjects extends StatefulWidget {
       required this.onSelect,
       required this.initiallySelectedSubjectsIds})
       : super(key: key);
+
   @override
   _SelectMultipleSubjectsState createState() => _SelectMultipleSubjectsState();
 }

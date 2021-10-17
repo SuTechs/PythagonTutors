@@ -486,3 +486,52 @@ class TransactionData {
     return _transactions;
   }
 }
+
+/// Notifications
+
+class NotificationData {
+  // info
+  final String id;
+  final String from;
+  final String to;
+  final DateTime createdAt;
+
+  // notification
+  final String title;
+  final String body;
+
+  // data
+  final Map<String, dynamic>? data;
+
+  bool isRead;
+
+  NotificationData({
+    required this.id,
+    required this.from,
+    required this.createdAt,
+    required this.to,
+    required this.title,
+    required this.body,
+    required this.isRead,
+    this.data,
+  });
+
+  factory NotificationData.fromJson(Map<String, dynamic> json) {
+    return NotificationData(
+      id: json['id'],
+      from: json['from'],
+      to: json['to'],
+      title: json['title'],
+      body: json['body'],
+      data: json['data'],
+      isRead: json['isRead'] ?? false,
+      createdAt: json['createdAt'] == null
+          ? Timestamp.now().toDate()
+          : (json['createdAt'] as Timestamp).toDate(),
+    );
+  }
+
+  void markAsRead() async {
+    CollectionRef.notifications.doc(id).update({"isRead": true});
+  }
+}

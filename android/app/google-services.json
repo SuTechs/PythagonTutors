@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "418364324089-8nn0ut4eba449rhbh0ma6j0fj2i9le25.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pythagon.tutors",
+            "certificate_hash": "05b9cc5c3e06c85a9610a29bbbe7e90207354ba6"
+          }
+        },
+        {
+          "client_id": "418364324089-jc008qa8na5dmru3ii5tafes0qbn4bjr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pythagon.tutors",
+            "certificate_hash": "53d28ea929279d43a0263e73cef45fd479ad5ee7"
+          }
+        },
+        {
           "client_id": "418364324089-uqb4vlpaiha4bsrermcragt2rn0pgjid.apps.googleusercontent.com",
           "client_type": 3
         }

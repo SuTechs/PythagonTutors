@@ -22,8 +22,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Pythagon Tutors',
       theme: ThemeData(
-        primarySwatch: Colors.pink,
-        accentColor: kLogoRedColor,
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.pink)
+            .copyWith(secondary: kLogoRedColor),
       ),
       home: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),

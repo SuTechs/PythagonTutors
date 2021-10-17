@@ -11,7 +11,9 @@ class Transaction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: ThemeData(accentColor: kBlueColor),
+      data: ThemeData(
+          colorScheme:
+              ColorScheme.fromSwatch().copyWith(secondary: kBlueColor)),
       child: Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
@@ -75,7 +77,14 @@ class Transaction extends StatelessWidget {
                   );
                 }
 
-                if (snapshot.hasData)
+                if (snapshot.hasData) {
+                  print('data = ${snapshot.data}');
+
+                  if (snapshot.data!.isEmpty)
+                    return Center(
+                      child: Text('No Transactions Yet!'),
+                    );
+
                   return ListView.separated(
                       itemBuilder: (_, i) {
                         return TransactionListTile(
@@ -90,6 +99,7 @@ class Transaction extends StatelessWidget {
                         );
                       },
                       itemCount: snapshot.data!.length);
+                }
 
                 return Center(child: CircularProgressIndicator());
               },
@@ -106,6 +116,7 @@ class TransactionListTile extends StatelessWidget {
 
   const TransactionListTile({Key? key, required this.transaction})
       : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return ListTile(

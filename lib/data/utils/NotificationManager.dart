@@ -22,6 +22,8 @@ class NotificationManager {
   //     _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
+    await FirebaseMessaging.instance
+        .getToken(); // => temporary fix for onResume message
     // /// configuring the notification channel
     // await _flutterLocalNotificationsPlugin
     //     .resolvePlatformSpecificImplementation<
@@ -42,7 +44,7 @@ class NotificationManager {
 
     /// foreground message
     FirebaseMessaging.onMessage.listen((message) {
-      // print('message = $message');
+      print('message = $message');
       //
       final RemoteNotification? notification = message.notification;
       // final AndroidNotification? android = message.notification?.android;

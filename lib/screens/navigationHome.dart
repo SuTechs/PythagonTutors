@@ -1,11 +1,15 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:tutors/data/bloc/notificationBloc.dart';
 import 'package:tutors/data/utils/NotificationManager.dart';
-import 'package:tutors/data/utils/Utils.dart';
 import 'package:tutors/screens/profile.dart';
 
 import '../constants.dart';
 import 'home.dart';
+import 'notifications.dart';
 
 class NavScreen {
   final String title;
@@ -21,7 +25,9 @@ class NavigationHome extends StatefulWidget {
 }
 
 class _NavigationHomeState extends State<NavigationHome> {
-  final List<NavScreen> _screens = [
+  static final _notificationsController = Get.put(NotificationListController());
+
+  late final List<NavScreen> _screens = [
     /// home
     NavScreen(
       title: 'Home',
@@ -55,21 +61,38 @@ class _NavigationHomeState extends State<NavigationHome> {
       ),
     ),
 
-    /// chat
+    /// notifications
     NavScreen(
-      title: 'Chat',
-      screens: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            launchWhatsapp();
-          },
-          child: Text('Open Whatsapp'),
-        ),
-      ),
-      icon: Icon(
-        Icons.chat,
-        size: 30,
-        color: Colors.white,
+      title: 'Notifications',
+      screens: NotificationScreen(),
+      icon: Stack(
+        children: [
+          Icon(
+            Icons.notifications,
+            size: 30,
+            color: Colors.white,
+          ),
+          // new notification count
+
+          Obx(
+            () => Visibility(
+              visible: _notificationsController.notifications
+                  .where((p0) => !p0.isRead)
+                  .isNotEmpty,
+              child: CircleAvatar(
+                radius: 9,
+                backgroundColor: Colors.red,
+                child: Text(
+                  '${_notificationsController.notifications.where((p0) => !p0.isRead).length}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     ),
 
@@ -97,7 +120,7 @@ class _NavigationHomeState extends State<NavigationHome> {
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData(
-        accentColor: kBlueColor,
+        colorScheme: ColorScheme.fromSwatch().copyWith(secondary: kBlueColor),
       ),
       child: Scaffold(
         appBar: AppBar(
